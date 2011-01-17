@@ -16,6 +16,8 @@ module Delayed
       @worker_count = 1
       @monitor = false
       
+      MongoMapper.connection.close if defined?(MongoMapper)
+
       opts = OptionParser.new do |opts|
         opts.banner = "Usage: #{File.basename($0)} [options] start|stop|restart|run"
 
@@ -92,6 +94,8 @@ module Delayed
         end
       end
       
+      MongoMapper.connection.connect_to_master if defined?(MongoMapper)
+
       Delayed::Worker.logger = Logger.new(File.join(RAILS_ROOT, 'log', 'delayed_job.log'))
       Delayed::Worker.backend.after_fork
       
@@ -106,3 +110,13 @@ module Delayed
     
   end
 end
+
+module ActiveSupport
+  class BufferedLogger
+    def flush
+      super
+      rescue Exception
+    end
+  end
+end
+
