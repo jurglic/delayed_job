@@ -16,7 +16,6 @@ module Delayed
       @worker_count = 1
       @monitor = false
       
-      MongoMapper.connection.close if defined?(MongoMapper)
 
       opts = OptionParser.new do |opts|
         opts.banner = "Usage: #{File.basename($0)} [options] start|stop|restart|run"
@@ -55,6 +54,7 @@ module Delayed
   
     def daemonize
       Delayed::Worker.backend.before_fork
+      MongoMapper.connection.close if defined?(MongoMapper)
 
       ObjectSpace.each_object(File) do |file|
         @files_to_reopen << file unless file.closed?
@@ -94,10 +94,10 @@ module Delayed
         end
       end
       
-      MongoMapper.connection.connect_to_master if defined?(MongoMapper)
 
       Delayed::Worker.logger = Logger.new(File.join(RAILS_ROOT, 'log', 'delayed_job.log'))
       Delayed::Worker.backend.after_fork
+      MongoMapper.connection.connect_to_master if defined?(MongoMapper)
       
       worker = Delayed::Worker.new(@options)
       worker.name_prefix = "#{worker_name} "
